@@ -4,6 +4,8 @@ import torch.nn as nn
 
 soft_max = nn.Softmax(dim=2)
 
+# Train-Test functions for GEPNet detector for true MIMO-OTFS. 
+# These functions are used in the main training/testing script.
 
 def QAM_const(constellation):
     mod_n = len(constellation) ** 2
