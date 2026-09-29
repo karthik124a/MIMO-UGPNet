@@ -1,0 +1,2 @@
+training samples: 1000
+epoch,loss,trainAcc

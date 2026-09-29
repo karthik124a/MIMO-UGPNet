@@ -3,8 +3,7 @@ import torch
 
 
 class genData(object):
-    """Generate true MIMO-OTFS training/testing data.
-
+    """
     Nt/Nr are physical transmit/receive antenna counts.
     M/N are OTFS delay/time grid dimensions.
 
@@ -421,10 +420,13 @@ def find_effective_H_rect_new(delay_taps, doppler_taps, chan_coef, M, N):
     This is used as one block of the full Nr x Nt MIMO channel.
     """
     H_rect = torch.zeros(
-        (M * N, M * N), dtype=torch.complex128
+        (M * N, M * N),
+        dtype=torch.complex128,
+        device=chan_coef.device
     )
 
     num_taps = len(delay_taps)
+
     for ele1 in range(1, M + 1):
         for ele2 in range(1, N + 1):
             for tap_no in range(num_taps):
@@ -433,38 +435,73 @@ def find_effective_H_rect_new(delay_taps, doppler_taps, chan_coef, M, N):
 
                 if ele1 + delay <= M:
                     eff_ele1 = ele1 + delay
-                    add_term = torch.exp(
-                        1j * 2 * (torch.pi / M)
-                        * (ele1 - 1) * (doppler / N)
+
+                    phase = torch.tensor(
+                        2.0 * torch.pi
+                        * (ele1 - 1)
+                        * doppler
+                        / (M * N),
+                        dtype=torch.float64,
+                        device=chan_coef.device
                     )
+
+                    add_term = torch.polar(
+                        torch.ones_like(phase),
+                        phase
+                    )
+
                     int_flag = 0
+
                 else:
                     eff_ele1 = ele1 + delay - M
-                    add_term = torch.exp(
-                        1j * 2 * (torch.pi / M)
-                        * (ele1 - 1 - M) * (doppler / N)
+
+                    phase = torch.tensor(
+                        2.0 * torch.pi
+                        * (ele1 - 1 - M)
+                        * doppler
+                        / (M * N),
+                        dtype=torch.float64,
+                        device=chan_coef.device
                     )
+
+                    add_term = torch.polar(
+                        torch.ones_like(phase),
+                        phase
+                    )
+
                     int_flag = 1
 
                 add_term1 = torch.tensor(
-                    1.0, dtype=torch.complex128
+                    1.0,
+                    dtype=torch.complex128,
+                    device=chan_coef.device
                 )
+
                 if int_flag == 1:
-                    add_term1 = torch.exp(
-                        torch.tensor(
-                            -1j * 2 * torch.pi
-                            * ((ele2 - 1) / N),
-                            dtype=torch.complex128
-                        )
+                    phase2 = torch.tensor(
+                        -2.0 * torch.pi
+                        * (ele2 - 1)
+                        / N,
+                        dtype=torch.float64,
+                        device=chan_coef.device
+                    )
+
+                    add_term1 = torch.polar(
+                        torch.ones_like(phase2),
+                        phase2
                     )
 
                 eff_ele2 = ((ele2 - 1 + doppler) % N) + 1
+
                 new_chan = (
-                    add_term * add_term1 * chan_coef[tap_no]
+                    add_term
+                    * add_term1
+                    * chan_coef[tap_no]
                 )
 
                 row_idx = N * (eff_ele1 - 1) + eff_ele2 - 1
                 col_idx = N * (ele1 - 1) + ele2 - 1
+
                 H_rect[row_idx, col_idx] = new_chan
 
     return H_rect

@@ -12,7 +12,7 @@ norm_symbs = list_of_symbols / norm_cons
 constellation = np.array(np.concatenate((norm_symbs, -1 * norm_symbs)), dtype=np.float32)
 
 DEFAULT_NR = 4
-DEFAULT_NT = 4
+DEFAULT_NT = 8
 DEFAULT_M = 4
 DEFAULT_N = 4
 
